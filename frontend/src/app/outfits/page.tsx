@@ -7,7 +7,7 @@ import {
   Sparkles, Loader2, AlertCircle, Trash2, Calendar, MessageSquare,
   ChevronDown, Zap,
 } from "lucide-react";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 interface Garment {
   id: string;
@@ -15,7 +15,7 @@ interface Garment {
   garmentType: string;
   primaryColor: string;
   formality: string;
-  processedImagePath: string;
+  processedImageUrl: string;
 }
 
 interface SavedOutfit {
@@ -127,7 +127,7 @@ function OutfitCard({
             >
               <div className="flex aspect-square items-center justify-center p-2">
                 <img
-                  src={`${API_BASE}${g.processedImagePath}`}
+                  src={g.processedImageUrl}
                   alt={g.name}
                   className="h-full w-full object-contain"
                 />

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
-import { API_BASE } from "@/lib/api";
 
 interface Garment {
   id: string;
@@ -16,7 +15,7 @@ interface Garment {
   pattern: string;
   weatherSuitability: string[];
   notes?: string | null;
-  processedImagePath: string;
+  processedImageUrl: string;
 }
 
 interface GarmentCardProps {
@@ -51,7 +50,7 @@ export default function GarmentCard({ garment, onDelete, onClick, index = 0 }: G
     >
       <div className="relative flex aspect-square items-center justify-center bg-dark-850/60 p-6">
         <img
-          src={`${API_BASE}${garment.processedImagePath}`}
+          src={garment.processedImageUrl}
           alt={garment.name}
           className="h-full w-full object-contain drop-shadow-lg transition-transform duration-300 group-hover:scale-105"
         />

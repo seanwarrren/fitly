@@ -2,14 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Image as ImageIcon, Sparkles } from "lucide-react";
-import { API_BASE } from "@/lib/api";
 
 interface ImagePreviewProps {
-  originalPath: string;
-  processedPath: string;
+  originalUrl: string;
+  processedUrl: string;
 }
 
-export default function ImagePreview({ originalPath, processedPath }: ImagePreviewProps) {
+export default function ImagePreview({ originalUrl, processedUrl }: ImagePreviewProps) {
   return (
     <div className="grid gap-5 sm:grid-cols-2">
       <motion.div
@@ -26,7 +25,7 @@ export default function ImagePreview({ originalPath, processedPath }: ImagePrevi
         </div>
         <div className="flex items-center justify-center p-5">
           <img
-            src={`${API_BASE}${originalPath}`}
+            src={originalUrl}
             alt="Original garment"
             className="max-h-72 rounded-lg object-contain"
           />
@@ -50,7 +49,7 @@ export default function ImagePreview({ originalPath, processedPath }: ImagePrevi
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='10' height='10' fill='%230f1629'/%3E%3Crect x='10' y='10' width='10' height='10' fill='%230f1629'/%3E%3Crect x='10' width='10' height='10' fill='%230a0f1e'/%3E%3Crect y='10' width='10' height='10' fill='%230a0f1e'/%3E%3C/svg%3E")`,
         }}>
           <img
-            src={`${API_BASE}${processedPath}`}
+            src={processedUrl}
             alt="Background removed"
             className="max-h-72 rounded-lg object-contain drop-shadow-xl"
           />

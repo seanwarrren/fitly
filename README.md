@@ -11,6 +11,7 @@ This is a class-project MVP — clean, understandable, and not overengineered.
 | Frontend           | Next.js (App Router) + React + TypeScript   |
 | Backend            | FastAPI + Python                            |
 | Database           | MongoDB Atlas                               |
+| Image Storage      | Cloudinary                                  |
 | Background Removal | rembg                                       |
 | Deployment         | Render (frontend + backend)                 |
 
@@ -28,13 +29,10 @@ fitly/
 │   ├── app/
 │   │   ├── main.py    # FastAPI entry point
 │   │   ├── routes/    # API route modules
-│   │   ├── services/  # Business logic
+│   │   ├── services/  # Business logic (incl. Cloudinary)
 │   │   ├── models/    # Pydantic schemas
 │   │   ├── db/        # MongoDB connection
 │   │   └── utils/     # Helpers
-│   └── uploads/       # Local image storage (MVP)
-│       ├── originals/
-│       └── processed/
 ├── render.yaml        # Render Blueprint (IaC)
 └── README.md
 ```
@@ -42,7 +40,7 @@ fitly/
 ## Architecture
 
 - **Image ingestion is two-stage:** upload/process the image first, then save garment metadata separately.
-- **Images are stored on the local filesystem** (`backend/uploads/`) for the MVP — MongoDB stores metadata and relative image paths, not binaries.
+- **Images are stored in Cloudinary.** The backend uploads both original and processed images to Cloudinary after background removal. MongoDB stores Cloudinary URLs and public IDs — no image files are stored locally or in the database.
 - **No authentication yet** — a hardcoded `demo-user` userId is used where needed.
 - **Route handlers are thin** — business logic lives in `services/`.
 
@@ -50,10 +48,10 @@ fitly/
 
 1. The frontend sends a `POST /api/upload` with an image file.
 2. The backend validates the file (extension, content type, size).
-3. The original image is saved to `backend/uploads/originals/`.
-4. `rembg` removes the background and saves a transparent PNG to `backend/uploads/processed/`.
-5. The API returns a `fileId` and relative paths for both images.
-6. Uploaded images are served as static files so the frontend can display them.
+3. `rembg` removes the background and produces a transparent PNG.
+4. Both the original image and the processed PNG are uploaded to Cloudinary (folders: `fitly/originals` and `fitly/processed`).
+5. The API returns a `fileId`, Cloudinary URLs, and public IDs.
+6. The frontend displays images directly from Cloudinary URLs.
 
 Garment metadata (type, color, formality, etc.) is saved in a **separate** step after the user classifies the garment.
 
@@ -66,6 +64,7 @@ Garment metadata (type, color, formality, etc.) is saved in a **separate** step 
 - Node.js 18+
 - Python 3.10+
 - A MongoDB Atlas cluster (free tier works)
+- A Cloudinary account (free tier works)
 
 ### Backend
 
@@ -97,10 +96,13 @@ The app runs at **http://localhost:3000**.
 
 ### Backend (`backend/.env`)
 
-| Variable       | Description                          | Example                                                                 |
-| -------------- | ------------------------------------ | ----------------------------------------------------------------------- |
-| `MONGO_URI`    | MongoDB Atlas connection string      | `mongodb+srv://user:pass@cluster.mongodb.net/?appName=fitly`            |
-| `FRONTEND_URL` | Deployed frontend URL (for CORS)     | `https://fitly-frontend.onrender.com`                                   |
+| Variable                 | Description                          | Example                                                                 |
+| ------------------------ | ------------------------------------ | ----------------------------------------------------------------------- |
+| `MONGO_URI`              | MongoDB Atlas connection string      | `mongodb+srv://user:pass@cluster.mongodb.net/?appName=fitly`            |
+| `FRONTEND_URL`           | Deployed frontend URL (for CORS)     | `https://fitly-frontend.onrender.com`                                   |
+| `CLOUDINARY_CLOUD_NAME`  | Cloudinary cloud name                | `dxxxxxxxxx`                                                            |
+| `CLOUDINARY_API_KEY`     | Cloudinary API key                   | `123456789012345`                                                       |
+| `CLOUDINARY_API_SECRET`  | Cloudinary API secret                | `aBcDeFgHiJkLmNoPqRsTuVwXyZ`                                           |
 
 ### Frontend (`frontend/.env.local`)
 
@@ -114,6 +116,9 @@ For local development, use:
 # backend/.env
 MONGO_URI=mongodb+srv://...
 FRONTEND_URL=http://localhost:3000
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
 # frontend/.env.local
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
@@ -155,11 +160,14 @@ The repo includes a `render.yaml` Blueprint file. To use it:
 
 4. Add environment variables:
 
-| Key              | Value                                                    |
-| ---------------- | -------------------------------------------------------- |
-| `MONGO_URI`      | Your MongoDB Atlas connection string                     |
-| `FRONTEND_URL`   | `https://fitly-frontend.onrender.com` (your frontend URL)|
-| `PYTHON_VERSION` | `3.12.3`                                                 |
+| Key                       | Value                                                    |
+| ------------------------- | -------------------------------------------------------- |
+| `MONGO_URI`               | Your MongoDB Atlas connection string                     |
+| `FRONTEND_URL`            | `https://fitly-frontend.onrender.com` (your frontend URL)|
+| `CLOUDINARY_CLOUD_NAME`   | Your Cloudinary cloud name                               |
+| `CLOUDINARY_API_KEY`      | Your Cloudinary API key                                  |
+| `CLOUDINARY_API_SECRET`   | Your Cloudinary API secret                               |
+| `PYTHON_VERSION`          | `3.12.3`                                                 |
 
 5. Click **Create Web Service**.
 
@@ -201,6 +209,12 @@ MongoDB Atlas runs independently of Render:
 3. Whitelist `0.0.0.0/0` in **Network Access** so Render can connect (or whitelist Render's static IPs if available).
 4. Copy the connection string and set it as `MONGO_URI` in the backend environment variables.
 
+### Cloudinary
+
+1. Create a free account at [cloudinary.com](https://cloudinary.com).
+2. From your Cloudinary dashboard, copy your **Cloud Name**, **API Key**, and **API Secret**.
+3. Set them as environment variables in the backend (both locally in `.env` and on Render).
+
 ---
 
 ## Testing the API
@@ -218,8 +232,8 @@ Response:
 {
   "success": true,
   "fileId": "a1b2c3d4...",
-  "originalImagePath": "/uploads/originals/a1b2c3d4.jpg",
-  "processedImagePath": "/uploads/processed/a1b2c3d4.png"
+  "originalImageUrl": "https://res.cloudinary.com/.../fitly/originals/a1b2c3d4.jpg",
+  "processedImageUrl": "https://res.cloudinary.com/.../fitly/processed/a1b2c3d4.png"
 }
 ```
 
@@ -238,8 +252,8 @@ curl -X POST http://localhost:8000/api/garments/ \
     "pattern": "solid",
     "weatherSuitability": ["warm", "hot"],
     "notes": "Favorite summer shirt",
-    "originalImagePath": "/uploads/originals/a1b2c3d4.jpg",
-    "processedImagePath": "/uploads/processed/a1b2c3d4.png"
+    "originalImageUrl": "https://res.cloudinary.com/.../fitly/originals/a1b2c3d4.jpg",
+    "processedImageUrl": "https://res.cloudinary.com/.../fitly/processed/a1b2c3d4.png"
   }'
 ```
 
@@ -261,7 +275,6 @@ curl -X DELETE http://localhost:8000/api/garments/<garment-id>
 
 | Limitation                        | Detail                                                                                           |
 | --------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Image storage is local**        | Images are saved on the backend filesystem (`backend/uploads/`). On Render's free tier, the filesystem is ephemeral — uploaded images will be lost on redeploy. For a production app, migrate to cloud storage (e.g. AWS S3, Cloudinary). |
 | **No authentication**             | A hardcoded `demo-user` userId is used everywhere. There is no login, signup, or session management. |
 | **Rule-based outfit generation**  | Outfit generation uses simple keyword-matching rules, not an LLM. It matches garment metadata against weather/occasion cues extracted from the prompt. |
 | **No image editing**              | There is no cropping, rotation, or manual background editing after upload. |

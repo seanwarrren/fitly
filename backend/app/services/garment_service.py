@@ -1,17 +1,15 @@
 """Garment service — business logic for garment CRUD operations."""
 
 from datetime import datetime, timezone
-from pathlib import Path
 
 from bson import ObjectId
 from bson.errors import InvalidId
 
 from app.db.mongodb import get_db
+from app.services.cloudinary_service import delete_image
 
 DEMO_USER_ID = "demo-user"
 COLLECTION = "garments"
-
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
 
 
 def _garment_doc_to_dict(doc: dict) -> dict:
@@ -45,7 +43,7 @@ async def get_garments_for_user(user_id: str) -> list[dict]:
 async def delete_garment(garment_id: str) -> dict:
     """Delete a garment by its ObjectId string.
 
-    Also removes the original and processed image files from disk if they exist.
+    Also removes the corresponding Cloudinary images if public IDs are stored.
     Returns the deleted document (as a dict) or None if not found.
     """
     try:
@@ -58,12 +56,10 @@ async def delete_garment(garment_id: str) -> dict:
     if doc is None:
         return None
 
-    # Best-effort file cleanup
-    for key in ("originalImagePath", "processedImagePath"):
-        rel_path = doc.get(key, "")
-        if rel_path:
-            # Paths are stored like "/uploads/originals/abc.png"
-            full = UPLOAD_DIR / rel_path.lstrip("/").removeprefix("uploads/")
-            full.unlink(missing_ok=True)
+    # Best-effort Cloudinary cleanup
+    for key in ("originalImagePublicId", "processedImagePublicId"):
+        public_id = doc.get(key)
+        if public_id:
+            delete_image(public_id)
 
     return _garment_doc_to_dict(doc)

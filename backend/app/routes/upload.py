@@ -7,7 +7,7 @@ router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 @router.post("/")
 async def upload_image(file: UploadFile = File(...)):
-    """Accept a single garment image, remove its background, and return file paths."""
+    """Accept a single garment image, remove its background, upload to Cloudinary."""
 
     file_bytes = await file.read()
 

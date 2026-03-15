@@ -18,8 +18,10 @@ class GarmentCreate(BaseModel):
     pattern: str = Field(..., min_length=1)
     weather_suitability: list[str] = Field(..., alias="weatherSuitability", min_length=1)
     notes: Optional[str] = None
-    original_image_path: str = Field(..., alias="originalImagePath")
-    processed_image_path: str = Field(..., alias="processedImagePath")
+    original_image_url: str = Field(..., alias="originalImageUrl")
+    processed_image_url: str = Field(..., alias="processedImageUrl")
+    original_image_public_id: Optional[str] = Field(None, alias="originalImagePublicId")
+    processed_image_public_id: Optional[str] = Field(None, alias="processedImagePublicId")
 
     model_config = {"populate_by_name": True}
 
@@ -38,8 +40,10 @@ class GarmentResponse(BaseModel):
     pattern: str
     weather_suitability: list[str] = Field(..., alias="weatherSuitability")
     notes: Optional[str] = None
-    original_image_path: str = Field(..., alias="originalImagePath")
-    processed_image_path: str = Field(..., alias="processedImagePath")
+    original_image_url: str = Field(..., alias="originalImageUrl")
+    processed_image_url: str = Field(..., alias="processedImageUrl")
+    original_image_public_id: Optional[str] = Field(None, alias="originalImagePublicId")
+    processed_image_public_id: Optional[str] = Field(None, alias="processedImagePublicId")
     created_at: datetime = Field(..., alias="createdAt")
 
     model_config = {"populate_by_name": True, "by_alias": True}

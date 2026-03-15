@@ -1,24 +1,15 @@
-"""Image processing service — handles upload validation, saving, and background removal."""
+"""Image processing service — validation, background removal, and Cloudinary upload."""
 
 import uuid
 from io import BytesIO
-from pathlib import Path
 
 from PIL import Image
 from rembg import remove
 
-UPLOAD_DIR = Path(__file__).resolve().parent.parent.parent / "uploads"
-ORIGINALS_DIR = UPLOAD_DIR / "originals"
-PROCESSED_DIR = UPLOAD_DIR / "processed"
+from app.services.cloudinary_service import upload_image
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-
-
-def ensure_upload_dirs() -> None:
-    """Create upload directories if they don't exist."""
-    ORIGINALS_DIR.mkdir(parents=True, exist_ok=True)
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def validate_file(filename: str, content_type: str | None, size: int) -> str | None:
@@ -38,34 +29,40 @@ def validate_file(filename: str, content_type: str | None, size: int) -> str | N
 
 
 async def process_upload(file_bytes: bytes, original_filename: str) -> dict:
-    """Full upload pipeline: save original, remove background, save processed.
+    """Full upload pipeline: remove background, upload both images to Cloudinary.
 
-    Returns a dict with fileId and the relative paths for both images.
+    Returns a dict with fileId and Cloudinary URLs + public IDs.
     """
-    ensure_upload_dirs()
-
     file_id = uuid.uuid4().hex
-    ext = _get_extension(original_filename)
 
-    # -- Save original --
-    original_name = f"{file_id}.{ext}"
-    original_path = ORIGINALS_DIR / original_name
-    original_path.write_bytes(file_bytes)
+    # Upload original to Cloudinary
+    original_result = upload_image(
+        file_bytes,
+        folder="fitly/originals",
+        public_id=file_id,
+    )
 
-    # -- Remove background with rembg --
+    # Remove background with rembg
     input_image = Image.open(BytesIO(file_bytes))
     result_image = remove(input_image)
 
-    # TODO: add optional cropping / centering standardization here later
+    # Convert processed image to PNG bytes for Cloudinary upload
+    buf = BytesIO()
+    result_image.save(buf, format="PNG")
+    processed_bytes = buf.getvalue()
 
-    processed_name = f"{file_id}.png"
-    processed_path = PROCESSED_DIR / processed_name
-    result_image.save(processed_path, format="PNG")
+    processed_result = upload_image(
+        processed_bytes,
+        folder="fitly/processed",
+        public_id=file_id,
+    )
 
     return {
         "fileId": file_id,
-        "originalImagePath": f"/uploads/originals/{original_name}",
-        "processedImagePath": f"/uploads/processed/{processed_name}",
+        "originalImageUrl": original_result["secure_url"],
+        "processedImageUrl": processed_result["secure_url"],
+        "originalImagePublicId": original_result["public_id"],
+        "processedImagePublicId": processed_result["public_id"],
     }
 
 

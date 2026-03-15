@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, AlertCircle, ShirtIcon, X, Trash2 } from "lucide-react";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 import GarmentCard from "@/components/GarmentCard";
 
 interface Garment {
@@ -19,8 +19,8 @@ interface Garment {
   pattern: string;
   weatherSuitability: string[];
   notes?: string | null;
-  originalImagePath: string;
-  processedImagePath: string;
+  originalImageUrl: string;
+  processedImageUrl: string;
   createdAt: string;
 }
 
@@ -99,7 +99,6 @@ export default function WardrobePage() {
         </Link>
       </motion.div>
 
-      {/* Loading skeletons */}
       {loading && (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {[...Array(8)].map((_, i) => (
@@ -117,7 +116,6 @@ export default function WardrobePage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -134,7 +132,6 @@ export default function WardrobePage() {
         </motion.div>
       )}
 
-      {/* Empty state */}
       {!loading && !error && garments.length === 0 && (
         <motion.div
           initial={{ opacity: 0, y: 12 }}
@@ -159,7 +156,6 @@ export default function WardrobePage() {
         </motion.div>
       )}
 
-      {/* Garment grid */}
       {!loading && garments.length > 0 && (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {garments.map((g, i) => (
@@ -174,7 +170,6 @@ export default function WardrobePage() {
         </div>
       )}
 
-      {/* Enlarged preview modal */}
       <AnimatePresence>
         {selected && (
           <motion.div
@@ -195,7 +190,6 @@ export default function WardrobePage() {
               onClick={(e) => e.stopPropagation()}
               className="glass-card relative w-full max-w-4xl overflow-hidden shadow-glow"
             >
-              {/* Close button */}
               <button
                 onClick={() => setSelected(null)}
                 className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-dark-900/80 text-slate-400 backdrop-blur-sm transition-all hover:border-white/[0.15] hover:text-white"
@@ -204,16 +198,14 @@ export default function WardrobePage() {
               </button>
 
               <div className="flex flex-col sm:flex-row">
-                {/* Image */}
                 <div className="flex items-center justify-center bg-dark-850/60 p-8 sm:w-1/2">
                   <img
-                    src={`${API_BASE}${selected.processedImagePath}`}
+                    src={selected.processedImageUrl}
                     alt={selected.name}
                     className="max-h-[28rem] w-full object-contain drop-shadow-xl"
                   />
                 </div>
 
-                {/* Details */}
                 <div className="flex flex-1 flex-col gap-4 p-6">
                   <div>
                     <h2 className="text-lg font-bold text-white">{selected.name}</h2>

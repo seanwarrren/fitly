@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, Save, CheckCircle2, BookmarkIcon, Upload, Zap, Brain,
 } from "lucide-react";
-import { apiFetch, API_BASE } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 interface Garment {
   id: string;
@@ -16,7 +16,7 @@ interface Garment {
   primaryColor: string;
   formality: string;
   weatherSuitability: string[];
-  processedImagePath: string;
+  processedImageUrl: string;
 }
 
 interface OutfitResult {
@@ -262,7 +262,7 @@ export default function GenerateOutfitPage() {
                     >
                       <div className="flex aspect-square items-center justify-center bg-dark-850/60 p-4">
                         <img
-                          src={`${API_BASE}${g.processedImagePath}`}
+                          src={g.processedImageUrl}
                           alt={g.name}
                           className="h-full w-full object-contain drop-shadow-lg"
                         />

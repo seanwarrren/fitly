@@ -14,8 +14,10 @@ import GarmentForm, { type GarmentFormData } from "@/components/GarmentForm";
 interface UploadResult {
   success: boolean;
   fileId: string;
-  originalImagePath: string;
-  processedImagePath: string;
+  originalImageUrl: string;
+  processedImageUrl: string;
+  originalImagePublicId: string;
+  processedImagePublicId: string;
 }
 
 const PROCESSING_STEPS = [
@@ -102,8 +104,10 @@ export default function UploadPage() {
         method: "POST",
         body: JSON.stringify({
           ...formData,
-          originalImagePath: uploadResult.originalImagePath,
-          processedImagePath: uploadResult.processedImagePath,
+          originalImageUrl: uploadResult.originalImageUrl,
+          processedImageUrl: uploadResult.processedImageUrl,
+          originalImagePublicId: uploadResult.originalImagePublicId,
+          processedImagePublicId: uploadResult.processedImagePublicId,
         }),
       });
       setSuccess(true);
@@ -289,8 +293,8 @@ export default function UploadPage() {
       {uploadResult && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
           <ImagePreview
-            originalPath={uploadResult.originalImagePath}
-            processedPath={uploadResult.processedImagePath}
+            originalUrl={uploadResult.originalImageUrl}
+            processedUrl={uploadResult.processedImageUrl}
           />
           <GarmentForm onSubmit={handleSaveGarment} saving={saving} />
           <div className="mt-5 text-center">
