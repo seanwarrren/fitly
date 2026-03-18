@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
 from app.models.outfit import OutfitGenerateRequest, OutfitSaveRequest, OutfitResponse
 from app.services.outfit_service import generate_outfit
@@ -7,39 +7,40 @@ from app.services.outfit_persistence_service import (
     get_outfits_for_user,
     delete_outfit,
 )
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/outfits", tags=["outfits"])
 
 
 @router.post("/generate")
-async def generate_outfit_route(body: OutfitGenerateRequest):
-    """Generate a rule-based outfit from the user's wardrobe."""
+async def generate_outfit_route(body: OutfitGenerateRequest, user_id: str = Depends(get_current_user)):
+    """Generate a rule-based outfit from the authenticated user's wardrobe."""
     try:
-        result = await generate_outfit(body.user_id, body.prompt)
+        result = await generate_outfit(user_id, body.prompt)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Outfit generation failed: {exc}")
     return result
 
 
 @router.post("/", response_model=OutfitResponse)
-async def save_outfit_route(body: OutfitSaveRequest):
-    """Save a generated outfit to MongoDB."""
+async def save_outfit_route(body: OutfitSaveRequest, user_id: str = Depends(get_current_user)):
+    """Save a generated outfit to MongoDB for the authenticated user."""
     data = body.model_dump(by_alias=True)
-    doc = await save_outfit(data)
+    doc = await save_outfit(data, user_id)
     return doc
 
 
-@router.get("/{user_id}", response_model=list[OutfitResponse])
-async def list_outfits(user_id: str):
-    """Return all saved outfits for a user, newest first."""
+@router.get("/", response_model=list[OutfitResponse])
+async def list_outfits(user_id: str = Depends(get_current_user)):
+    """Return all saved outfits for the authenticated user, newest first."""
     docs = await get_outfits_for_user(user_id)
     return docs
 
 
 @router.delete("/{outfit_id}")
-async def delete_outfit_route(outfit_id: str):
-    """Delete a saved outfit by id."""
-    deleted = await delete_outfit(outfit_id)
+async def delete_outfit_route(outfit_id: str, user_id: str = Depends(get_current_user)):
+    """Delete a saved outfit by id, only if it belongs to the authenticated user."""
+    deleted = await delete_outfit(outfit_id, user_id)
     if deleted is None:
         raise HTTPException(status_code=404, detail="Outfit not found")
     return {"success": True, "deleted": deleted}

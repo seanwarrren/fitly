@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, AlertCircle, ShirtIcon, X, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import GarmentCard from "@/components/GarmentCard";
 
 interface Garment {
@@ -24,9 +26,9 @@ interface Garment {
   createdAt: string;
 }
 
-const USER_ID = "demo-user";
-
 export default function WardrobePage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [garments, setGarments] = useState<Garment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +36,9 @@ export default function WardrobePage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    fetchGarments();
-  }, []);
+    if (!authLoading && !user) { router.push("/login"); return; }
+    if (user) fetchGarments();
+  }, [authLoading, user]);
 
   useEffect(() => {
     if (!selected) return;
@@ -50,7 +53,7 @@ export default function WardrobePage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch<Garment[]>(`/api/garments/${USER_ID}`);
+      const data = await apiFetch<Garment[]>("/api/garments/");
       setGarments(data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load wardrobe");
@@ -78,6 +81,8 @@ export default function WardrobePage() {
       setDeleting(false);
     }
   }, [selected]);
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-14">

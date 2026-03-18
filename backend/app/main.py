@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
-from app.routes import upload, garments, outfits
+from app.routes import upload, garments, outfits, auth
 from app.db.mongodb import connect as db_connect, close as db_close
 from app.services.cloudinary_service import init_cloudinary
 
@@ -36,6 +36,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(upload.router)
 app.include_router(garments.router)
 app.include_router(outfits.router)

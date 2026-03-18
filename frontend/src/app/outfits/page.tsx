@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, AlertCircle, Trash2, Calendar, MessageSquare,
   ChevronDown, Zap,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface Garment {
   id: string;
@@ -27,8 +29,6 @@ interface SavedOutfit {
   reasoning: string;
   createdAt: string;
 }
-
-const USER_ID = "demo-user";
 
 function OutfitCard({
   outfit,
@@ -151,22 +151,26 @@ function OutfitCard({
 }
 
 export default function SavedOutfitsPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
   const [outfits, setOutfits] = useState<SavedOutfit[]>([]);
   const [garmentMap, setGarmentMap] = useState<Record<string, Garment>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (!authLoading && !user) { router.push("/login"); return; }
+    if (user) fetchData();
+  }, [authLoading, user]);
 
   async function fetchData() {
     setLoading(true);
     setError(null);
     try {
       const [outfitData, garmentData] = await Promise.all([
-        apiFetch<SavedOutfit[]>(`/api/outfits/${USER_ID}`),
-        apiFetch<Garment[]>(`/api/garments/${USER_ID}`),
+        apiFetch<SavedOutfit[]>("/api/outfits/"),
+        apiFetch<Garment[]>("/api/garments/"),
       ]);
       setOutfits(outfitData);
       const map: Record<string, Garment> = {};
@@ -188,6 +192,8 @@ export default function SavedOutfitsPage() {
       alert(err instanceof Error ? err.message : "Delete failed");
     }
   }
+
+  if (authLoading || !user) return null;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-14">

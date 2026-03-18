@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, Save, CheckCircle2, BookmarkIcon, Upload, Zap, Brain,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 
 interface Garment {
   id: string;
@@ -60,6 +62,9 @@ function TypewriterText({ text, className }: { text: string; className?: string 
 }
 
 export default function GenerateOutfitPage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState<OutfitResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,6 +73,10 @@ export default function GenerateOutfitPage() {
   const [outfitName, setOutfitName] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
 
   async function handleGenerate() {
     if (!prompt.trim()) return;
@@ -79,7 +88,7 @@ export default function GenerateOutfitPage() {
     try {
       const data = await apiFetch<OutfitResult>("/api/outfits/generate", {
         method: "POST",
-        body: JSON.stringify({ userId: "demo-user", prompt }),
+        body: JSON.stringify({ prompt }),
       });
       setResult(data);
     } catch (err: unknown) {
@@ -100,7 +109,6 @@ export default function GenerateOutfitPage() {
       await apiFetch("/api/outfits/", {
         method: "POST",
         body: JSON.stringify({
-          userId: "demo-user",
           name: outfitName.trim() || null,
           prompt,
           garmentIds,
@@ -114,6 +122,8 @@ export default function GenerateOutfitPage() {
       setSaving(false);
     }
   }
+
+  if (authLoading || !user) return null;
 
   const filledSlots = result ? SLOTS.filter((s) => result.outfit[s] !== null) : [];
   const emptySlots = result ? SLOTS.filter((s) => result.outfit[s] === null) : [];

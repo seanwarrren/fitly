@@ -7,14 +7,12 @@ from pydantic import BaseModel, Field
 
 
 class OutfitGenerateRequest(BaseModel):
-    user_id: str = Field(..., alias="userId")
     prompt: str = Field(..., min_length=1)
 
     model_config = {"populate_by_name": True}
 
 
 class OutfitSaveRequest(BaseModel):
-    user_id: str = Field(..., alias="userId")
     name: Optional[str] = Field(None, max_length=120)
     prompt: str
     garment_ids: list[str] = Field(..., alias="garmentIds")

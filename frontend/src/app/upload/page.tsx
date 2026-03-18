@@ -8,6 +8,7 @@ import {
   ScanLine, Sparkles,
 } from "lucide-react";
 import { apiUpload, apiFetch } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import ImagePreview from "@/components/ImagePreview";
 import GarmentForm, { type GarmentFormData } from "@/components/GarmentForm";
 
@@ -28,6 +29,7 @@ const PROCESSING_STEPS = [
 
 export default function UploadPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [localPreview, setLocalPreview] = useState<string | null>(null);
@@ -38,6 +40,10 @@ export default function UploadPage() {
   const [success, setSuccess] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
+
+  useEffect(() => {
+    if (!authLoading && !user) router.push("/login");
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     if (!uploading) return;
@@ -117,6 +123,8 @@ export default function UploadPage() {
       setSaving(false);
     }
   }
+
+  if (authLoading || !user) return null;
 
   if (success) {
     return (

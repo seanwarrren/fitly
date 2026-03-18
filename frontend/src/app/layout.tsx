@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import AuthProvider from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -24,8 +25,10 @@ export default function RootLayout({
         <div className="bg-blob bg-blob-3" />
         <div className="grid-overlay" />
 
-        <Navbar />
-        <main className="relative min-h-[calc(100vh-4rem)]">{children}</main>
+        <AuthProvider>
+          <Navbar />
+          <main className="relative min-h-[calc(100vh-4rem)]">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

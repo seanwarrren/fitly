@@ -11,14 +11,24 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
+function getAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("fitly_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function apiFetch<T = unknown>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
   const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+      ...options?.headers,
+    },
   });
 
   if (!res.ok) {
@@ -34,7 +44,11 @@ export async function apiUpload<T = unknown>(
   formData: FormData,
 ): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const res = await fetch(url, { method: "POST", body: formData });
+  const res = await fetch(url, {
+    method: "POST",
+    body: formData,
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
     const body = await res.text();
