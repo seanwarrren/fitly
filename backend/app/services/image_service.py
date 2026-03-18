@@ -1,14 +1,8 @@
-"""Image processing service — validation, background removal, and Cloudinary upload."""
+"""Image upload service — validation and Cloudinary upload."""
 
 import uuid
-from io import BytesIO
-
-from PIL import Image
-from rembg import remove, new_session
 
 from app.services.cloudinary_service import upload_image
-
-_rembg_session = new_session("u2netp")
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -30,28 +24,19 @@ def validate_file(filename: str, content_type: str | None, size: int) -> str | N
     return None
 
 
-async def process_upload(file_bytes: bytes, original_filename: str) -> dict:
-    """Full upload pipeline: remove background, upload both images to Cloudinary.
+async def process_upload(original_bytes: bytes, processed_bytes: bytes) -> dict:
+    """Upload both original and processed images to Cloudinary.
 
-    Returns a dict with fileId and Cloudinary URLs + public IDs.
+    Background removal is handled client-side; the backend only
+    receives the two files and stores them.
     """
     file_id = uuid.uuid4().hex
 
-    # Upload original to Cloudinary
     original_result = upload_image(
-        file_bytes,
+        original_bytes,
         folder="fitly/originals",
         public_id=file_id,
     )
-
-    # Remove background with rembg
-    input_image = Image.open(BytesIO(file_bytes))
-    result_image = remove(input_image, session=_rembg_session)
-
-    # Convert processed image to PNG bytes for Cloudinary upload
-    buf = BytesIO()
-    result_image.save(buf, format="PNG")
-    processed_bytes = buf.getvalue()
 
     processed_result = upload_image(
         processed_bytes,
