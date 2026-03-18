@@ -4,9 +4,11 @@ import uuid
 from io import BytesIO
 
 from PIL import Image
-from rembg import remove
+from rembg import remove, new_session
 
 from app.services.cloudinary_service import upload_image
+
+_rembg_session = new_session("u2netp")
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -44,7 +46,7 @@ async def process_upload(file_bytes: bytes, original_filename: str) -> dict:
 
     # Remove background with rembg
     input_image = Image.open(BytesIO(file_bytes))
-    result_image = remove(input_image)
+    result_image = remove(input_image, session=_rembg_session)
 
     # Convert processed image to PNG bytes for Cloudinary upload
     buf = BytesIO()
