@@ -10,6 +10,7 @@ import {
 import { apiUpload, apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { removeBackground } from "@/lib/removeBackground";
+import { resizeImage } from "@/lib/resizeImage";
 import ImagePreview from "@/components/ImagePreview";
 import GarmentForm, { type GarmentFormData } from "@/components/GarmentForm";
 
@@ -99,9 +100,12 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      const resizedOriginal = await resizeImage(selectedFile, "image/jpeg");
+      const resizedProcessed = await resizeImage(processedBlob, "image/png");
+
       const formData = new FormData();
-      formData.append("originalFile", selectedFile);
-      formData.append("processedFile", processedBlob, "processed.png");
+      formData.append("originalFile", resizedOriginal, "original.jpg");
+      formData.append("processedFile", resizedProcessed, "processed.png");
       const data = await apiUpload<UploadResult>("/api/upload/", formData);
       setUploadResult(data);
       setStep("form");
