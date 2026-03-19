@@ -38,21 +38,54 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    fetch(`${API_BASE}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${saved}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        setToken(saved);
-        setUser(data);
-      })
-      .catch(() => {
-        localStorage.removeItem("fitly_token");
-      })
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const controller = new AbortController();
+
+    async function fetchMe(attempt: number) {
+      const timeoutMs = 4500;
+      const t = window.setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${saved}` },
+          signal: controller.signal,
+        });
+
+        // Invalid token: clear immediately.
+        if (res.status === 401) {
+          localStorage.removeItem("fitly_token");
+          if (!cancelled) {
+            setToken(null);
+            setUser(null);
+          }
+          return;
+        }
+
+        if (!res.ok) throw new Error(`me_failed_${res.status}`);
+
+        const data = (await res.json()) as User;
+        if (!cancelled) {
+          setToken(saved);
+          setUser(data);
+        }
+      } catch (err: unknown) {
+        // Render cold starts can make the first request slow/hang.
+        // Don't block the UI; retry once shortly after.
+        if (attempt < 1 && !cancelled) {
+          window.setTimeout(() => fetchMe(attempt + 1), 1500);
+        }
+      } finally {
+        window.clearTimeout(t);
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    fetchMe(0);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {

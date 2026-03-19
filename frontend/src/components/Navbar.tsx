@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Upload, ShirtIcon, Sparkles, BookmarkIcon, Home, LogIn, LogOut, User } from "lucide-react";
+import { Upload, ShirtIcon, Sparkles, BookmarkIcon, Home, LogIn, LogOut, User, Loader2 } from "lucide-react";
 import { clsx } from "clsx";
 import { useAuth } from "@/context/AuthContext";
 
@@ -78,32 +78,31 @@ export default function Navbar() {
             })}
           </ul>
 
-          {!loading && (
-            <>
-              {user ? (
-                <div className="flex items-center gap-2 border-l border-white/[0.08] pl-3">
-                  <div className="flex items-center gap-1.5 text-sm text-slate-400">
-                    <User size={14} />
-                    <span className="hidden font-medium sm:inline">{user.username}</span>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-all hover:bg-white/[0.04] hover:text-slate-300"
-                  >
-                    <LogOut size={13} />
-                    <span className="hidden sm:inline">Logout</span>
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-sm font-medium text-slate-400 transition-all hover:border-white/[0.15] hover:text-white"
-                >
-                  <LogIn size={14} />
-                  <span className="hidden sm:inline">Login</span>
-                </Link>
+          {user ? (
+            <div className="flex items-center gap-2 border-l border-white/[0.08] pl-3">
+              <div className="flex items-center gap-1.5 text-sm text-slate-400">
+                <User size={14} />
+                <span className="hidden font-medium sm:inline">{user.username}</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-all hover:bg-white/[0.04] hover:text-slate-300"
+              >
+                <LogOut size={13} />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className={clsx(
+                "flex items-center gap-1.5 rounded-lg border border-white/[0.08] px-3 py-1.5 text-sm font-medium text-slate-400 transition-all hover:border-white/[0.15] hover:text-white",
+                loading && "opacity-80"
               )}
-            </>
+            >
+              {loading ? <Loader2 size={14} className="animate-spin" /> : <LogIn size={14} />}
+              <span className="hidden sm:inline">{loading ? "Loading…" : "Login"}</span>
+            </Link>
           )}
         </div>
       </div>
