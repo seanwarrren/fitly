@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles, Loader2, AlertCircle, Trash2, Calendar, MessageSquare,
-  ChevronDown, Zap,
+  ChevronDown, Zap, Edit3,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -34,14 +34,41 @@ function OutfitCard({
   outfit,
   garments,
   onDelete,
+  onRename,
   index,
 }: {
   outfit: SavedOutfit;
   garments: Garment[];
   onDelete: (id: string) => void;
+  onRename: (id: string, name: string | null) => Promise<void>;
   index: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameName, setRenameName] = useState(outfit.name ?? "");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
+
+  function startRename() {
+    setRenaming(true);
+    setRenameName(outfit.name ?? "");
+    setRenameError(null);
+  }
+
+  async function submitRename() {
+    setRenameSaving(true);
+    setRenameError(null);
+    try {
+      const trimmed = renameName.trim();
+      const normalized = trimmed ? trimmed : null; // Nullify blank names
+      await onRename(outfit.id, normalized);
+      setRenaming(false);
+    } catch (err: unknown) {
+      setRenameError(err instanceof Error ? err.message : "Rename failed");
+    } finally {
+      setRenameSaving(false);
+    }
+  }
 
   return (
     <motion.div
@@ -53,9 +80,25 @@ function OutfitCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-4 border-b border-white/[0.04] px-5 py-4">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-white">
-            {outfit.name || "Untitled Outfit"}
-          </h3>
+          {!renaming ? (
+            <h3 className="truncate font-semibold text-white">
+              {outfit.name || "Untitled Outfit"}
+            </h3>
+          ) : (
+            <div className="space-y-2">
+              <input
+                className="input-dark w-full"
+                value={renameName}
+                onChange={(e) => setRenameName(e.target.value)}
+                maxLength={120}
+                placeholder="Outfit name"
+                disabled={renameSaving}
+              />
+              {renameError && (
+                <p className="text-xs text-red-400">{renameError}</p>
+              )}
+            </div>
+          )}
           <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-600">
             <span className="flex items-center gap-1">
               <Calendar size={11} />
@@ -71,12 +114,45 @@ function OutfitCard({
             </span>
           </div>
         </div>
-        <button
-          onClick={() => onDelete(outfit.id)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.06] text-red-400 opacity-60 transition-all hover:border-red-500/40 hover:bg-red-500/15 hover:opacity-100"
-        >
-          <Trash2 size={13} />
-        </button>
+        <div className="flex items-center gap-2">
+          {!renaming ? (
+            <button
+              onClick={startRename}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-dark-900/40 text-slate-300 opacity-70 transition-all hover:border-white/[0.15] hover:bg-white/[0.04] hover:opacity-100"
+              title="Rename outfit"
+              aria-label="Rename outfit"
+              disabled={renameSaving}
+            >
+              <Edit3 size={13} />
+            </button>
+          ) : (
+            <div className="flex flex-col items-end gap-2">
+              <button
+                type="button"
+                onClick={() => { setRenaming(false); setRenameError(null); }}
+                className="rounded-lg border border-white/[0.08] bg-dark-900/40 px-2 py-1 text-[11px] text-slate-400 transition-all hover:border-white/[0.15] hover:bg-white/[0.04]"
+                disabled={renameSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitRename}
+                className="rounded-lg border border-accent/20 bg-accent/[0.08] px-2 py-1 text-[11px] font-medium text-accent transition-all hover:border-accent/35 hover:bg-accent/[0.12] disabled:opacity-60"
+                disabled={renameSaving}
+              >
+                {renameSaving ? "Saving…" : "Save"}
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => onDelete(outfit.id)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.06] text-red-400 opacity-60 transition-all hover:border-red-500/40 hover:bg-red-500/15 hover:opacity-100"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Prompt */}
@@ -193,6 +269,14 @@ export default function SavedOutfitsPage() {
     }
   }
 
+  async function handleRename(id: string, name: string | null) {
+    const updated = await apiFetch<SavedOutfit>(`/api/outfits/${id}/rename`, {
+      method: "PUT",
+      body: JSON.stringify({ name }),
+    });
+    setOutfits((prev) => prev.map((o) => (o.id === id ? updated : o)));
+  }
+
   if (authLoading || !user) return null;
 
   return (
@@ -292,6 +376,7 @@ export default function SavedOutfitsPage() {
                 outfit={outfit}
                 garments={garments}
                 onDelete={handleDelete}
+                onRename={handleRename}
                 index={i}
               />
             );

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit3 } from "lucide-react";
 
 interface Garment {
   id: string;
@@ -21,11 +21,12 @@ interface Garment {
 interface GarmentCardProps {
   garment: Garment;
   onDelete: (id: string) => Promise<void>;
+  onEdit?: (id: string) => void;
   onClick?: () => void;
   index?: number;
 }
 
-export default function GarmentCard({ garment, onDelete, onClick, index = 0 }: GarmentCardProps) {
+export default function GarmentCard({ garment, onDelete, onEdit, onClick, index = 0 }: GarmentCardProps) {
   const [deleting, setDeleting] = useState(false);
 
   async function handleDelete(e: React.MouseEvent) {
@@ -37,6 +38,11 @@ export default function GarmentCard({ garment, onDelete, onClick, index = 0 }: G
     } finally {
       setDeleting(false);
     }
+  }
+
+  function handleEdit(e: React.MouseEvent) {
+    e.stopPropagation();
+    onEdit?.(garment.id);
   }
 
   return (
@@ -60,6 +66,15 @@ export default function GarmentCard({ garment, onDelete, onClick, index = 0 }: G
           className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-dark-900/80 text-red-400 opacity-0 backdrop-blur-sm transition-all hover:border-red-500/40 hover:bg-red-500/20 group-hover:opacity-100 disabled:opacity-40"
         >
           <Trash2 size={13} />
+        </button>
+
+        <button
+          onClick={handleEdit}
+          className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-dark-900/80 text-slate-300 opacity-0 backdrop-blur-sm transition-all hover:border-white/[0.15] hover:bg-white/[0.04] group-hover:opacity-100"
+          title="Edit garment"
+          aria-label="Edit garment"
+        >
+          <Edit3 size={13} />
         </button>
       </div>
 

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
+from pymongo import ReturnDocument
 
 from app.db.mongodb import get_db
 
@@ -47,6 +48,34 @@ async def delete_outfit(outfit_id: str, user_id: str) -> dict | None:
 
     db = get_db()
     doc = await db[COLLECTION].find_one_and_delete({"_id": oid, "userId": user_id})
+    if doc is None:
+        return None
+
+    return _outfit_doc_to_dict(doc)
+
+
+async def rename_outfit(outfit_id: str, user_id: str, name: str | None) -> dict | None:
+    """Rename an outfit, scoped to the authenticated user.
+
+    Blank names are normalized to null (no name).
+    """
+    try:
+        oid = ObjectId(outfit_id)
+    except (InvalidId, TypeError):
+        return None
+
+    normalized_name = None
+    if name is not None:
+        cleaned = name.strip()
+        normalized_name = cleaned if cleaned else None
+
+    db = get_db()
+    doc = await db[COLLECTION].find_one_and_update(
+        {"_id": oid, "userId": user_id},
+        {"$set": {"name": normalized_name}},
+        return_document=ReturnDocument.AFTER,
+    )
+
     if doc is None:
         return None
 

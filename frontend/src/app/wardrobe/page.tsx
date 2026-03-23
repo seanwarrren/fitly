@@ -8,6 +8,7 @@ import { Plus, Loader2, AlertCircle, ShirtIcon, X, Trash2 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import GarmentCard from "@/components/GarmentCard";
+import GarmentForm from "@/components/GarmentForm";
 
 interface Garment {
   id: string;
@@ -34,6 +35,9 @@ export default function WardrobePage() {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Garment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editingSaving, setEditingSaving] = useState(false);
+  const [editingError, setEditingError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) { router.push("/login"); return; }
@@ -66,10 +70,21 @@ export default function WardrobePage() {
     try {
       await apiFetch(`/api/garments/${id}`, { method: "DELETE" });
       setGarments((prev) => prev.filter((g) => g.id !== id));
-      if (selected?.id === id) setSelected(null);
+      if (selected?.id === id) {
+        setSelected(null);
+        setEditing(false);
+      }
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Delete failed");
     }
+  }
+
+  function handleEdit(id: string) {
+    const g = garments.find((x) => x.id === id);
+    if (!g) return;
+    setSelected(g);
+    setEditing(true);
+    setEditingError(null);
   }
 
   const handleModalDelete = useCallback(async () => {
@@ -168,7 +183,8 @@ export default function WardrobePage() {
               key={g.id}
               garment={g}
               onDelete={handleDelete}
-              onClick={() => setSelected(g)}
+              onEdit={handleEdit}
+              onClick={() => { setSelected(g); setEditing(false); }}
               index={i}
             />
           ))}
@@ -196,7 +212,7 @@ export default function WardrobePage() {
               className="glass-card relative w-full max-w-4xl overflow-hidden shadow-glow"
             >
               <button
-                onClick={() => setSelected(null)}
+                onClick={() => { setSelected(null); setEditing(false); }}
                 className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-white/[0.08] bg-dark-900/80 text-slate-400 backdrop-blur-sm transition-all hover:border-white/[0.15] hover:text-white"
               >
                 <X size={16} />
@@ -212,48 +228,111 @@ export default function WardrobePage() {
                 </div>
 
                 <div className="flex flex-1 flex-col gap-4 p-6">
-                  <div>
-                    <h2 className="text-lg font-bold text-white">{selected.name}</h2>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {[selected.category, selected.garmentType, selected.primaryColor].map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-white/[0.06] bg-white/[0.04] px-2.5 py-0.5 text-xs font-medium capitalize text-slate-400"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    {([
-                      ["Formality", selected.formality],
-                      ["Thickness", selected.thickness],
-                      ["Pattern", selected.pattern],
-                      ["Weather", selected.weatherSuitability.join(", ")],
-                    ] as const).map(([label, val]) => (
-                      <div key={label} className="flex items-baseline justify-between text-sm">
-                        <span className="text-slate-500">{label}</span>
-                        <span className="font-medium capitalize text-slate-300">{val}</span>
+                  {!editing ? (
+                    <>
+                      <div>
+                        <h2 className="text-lg font-bold text-white">{selected.name}</h2>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {[selected.category, selected.garmentType, selected.primaryColor].map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full border border-white/[0.06] bg-white/[0.04] px-2.5 py-0.5 text-xs font-medium capitalize text-slate-400"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
 
-                  {selected.notes && (
-                    <p className="text-sm italic text-slate-500">{selected.notes}</p>
+                      <div className="space-y-2">
+                        {([
+                          ["Formality", selected.formality],
+                          ["Thickness", selected.thickness],
+                          ["Pattern", selected.pattern],
+                          ["Weather", selected.weatherSuitability.join(", ")],
+                        ] as const).map(([label, val]) => (
+                          <div key={label} className="flex items-baseline justify-between text-sm">
+                            <span className="text-slate-500">{label}</span>
+                            <span className="font-medium capitalize text-slate-300">{val}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {selected.notes && (
+                        <p className="text-sm italic text-slate-500">{selected.notes}</p>
+                      )}
+
+                      <div className="mt-auto pt-2">
+                        <button
+                          onClick={handleModalDelete}
+                          disabled={deleting}
+                          className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.08] px-4 py-2 text-xs font-medium text-red-400 transition-all hover:border-red-500/40 hover:bg-red-500/15 disabled:opacity-40"
+                        >
+                          <Trash2 size={13} />
+                          {deleting ? "Deleting…" : "Delete Garment"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full">
+                      {editingError && (
+                        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-sm text-red-400">
+                          {editingError}
+                        </div>
+                      )}
+
+                      {/* Reuse the same metadata form used for new garments */}
+                      <GarmentForm
+                        initialData={{
+                          name: selected.name,
+                          category: selected.category,
+                          garmentType: selected.garmentType,
+                          primaryColor: selected.primaryColor,
+                          formality: selected.formality,
+                          thickness: selected.thickness,
+                          pattern: selected.pattern,
+                          weatherSuitability: selected.weatherSuitability,
+                          notes: selected.notes ?? "",
+                        }}
+                        saving={editingSaving}
+                        title="Edit Garment"
+                        submitLabel="Save Changes"
+                        onSubmit={async (updated) => {
+                          if (!selected) return;
+                          setEditingSaving(true);
+                          setEditingError(null);
+                          try {
+                            const payload = {
+                              ...updated,
+                              notes: updated.notes.trim() ? updated.notes : null,
+                            };
+                            const resp = await apiFetch<Garment>(`/api/garments/${selected.id}`, {
+                              method: "PUT",
+                              body: JSON.stringify(payload),
+                            });
+
+                            setGarments((prev) => prev.map((g) => (g.id === selected.id ? resp : g)));
+                            setSelected(resp);
+                            setEditing(false);
+                          } catch (err: unknown) {
+                            setEditingError(err instanceof Error ? err.message : "Update failed");
+                          } finally {
+                            setEditingSaving(false);
+                          }
+                        }}
+                      />
+
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => { setEditing(false); setEditingError(null); }}
+                          className="btn-secondary"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   )}
-
-                  <div className="mt-auto pt-2">
-                    <button
-                      onClick={handleModalDelete}
-                      disabled={deleting}
-                      className="flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.08] px-4 py-2 text-xs font-medium text-red-400 transition-all hover:border-red-500/40 hover:bg-red-500/15 disabled:opacity-40"
-                    >
-                      <Trash2 size={13} />
-                      {deleting ? "Deleting…" : "Delete Garment"}
-                    </button>
-                  </div>
                 </div>
               </div>
             </motion.div>

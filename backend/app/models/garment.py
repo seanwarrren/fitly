@@ -47,3 +47,22 @@ class GarmentResponse(BaseModel):
     created_at: datetime = Field(..., alias="createdAt")
 
     model_config = {"populate_by_name": True, "by_alias": True}
+
+
+class GarmentUpdate(BaseModel):
+    """Editable garment metadata.
+
+    Intentionally excludes image fields / Cloudinary public IDs and internal IDs.
+    """
+
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    category: Optional[str] = Field(None, min_length=1)
+    garment_type: Optional[str] = Field(None, alias="garmentType", min_length=1)
+    primary_color: Optional[str] = Field(None, alias="primaryColor", min_length=1)
+    formality: Optional[str] = Field(None, min_length=1)
+    thickness: Optional[str] = Field(None, min_length=1)
+    pattern: Optional[str] = Field(None, min_length=1)
+    weather_suitability: Optional[list[str]] = Field(None, alias="weatherSuitability")
+    notes: Optional[str] = None
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}

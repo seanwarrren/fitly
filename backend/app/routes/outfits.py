@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 
-from app.models.outfit import OutfitGenerateRequest, OutfitSaveRequest, OutfitResponse
+from app.models.outfit import OutfitGenerateRequest, OutfitSaveRequest, OutfitResponse, OutfitRenameRequest
 from app.services.outfit_service import generate_outfit
 from app.services.outfit_persistence_service import (
     save_outfit,
     get_outfits_for_user,
     delete_outfit,
+    rename_outfit,
 )
 from app.dependencies import get_current_user
 
@@ -44,3 +45,16 @@ async def delete_outfit_route(outfit_id: str, user_id: str = Depends(get_current
     if deleted is None:
         raise HTTPException(status_code=404, detail="Outfit not found")
     return {"success": True, "deleted": deleted}
+
+
+@router.put("/{outfit_id}/rename", response_model=OutfitResponse)
+async def rename_outfit_route(
+    outfit_id: str,
+    body: OutfitRenameRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Rename a saved outfit for the authenticated user."""
+    updated = await rename_outfit(outfit_id, user_id, body.name)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Outfit not found")
+    return updated

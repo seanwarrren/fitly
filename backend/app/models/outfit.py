@@ -31,3 +31,9 @@ class OutfitResponse(BaseModel):
     created_at: datetime = Field(..., alias="createdAt")
 
     model_config = {"populate_by_name": True, "by_alias": True}
+
+
+class OutfitRenameRequest(BaseModel):
+    name: Optional[str] = Field(None, max_length=120)
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}

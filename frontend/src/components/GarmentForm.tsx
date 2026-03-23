@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -40,14 +40,36 @@ const INITIAL: GarmentFormData = {
 interface GarmentFormProps {
   onSubmit: (data: GarmentFormData) => Promise<void>;
   saving: boolean;
+  initialData?: Partial<GarmentFormData>;
+  title?: string;
+  submitLabel?: string;
 }
 
-export default function GarmentForm({ onSubmit, saving }: GarmentFormProps) {
+export default function GarmentForm({
+  onSubmit,
+  saving,
+  initialData,
+  title = "Classify This Garment",
+  submitLabel = "Save to Wardrobe",
+}: GarmentFormProps) {
   const [form, setForm] = useState<GarmentFormData>({ ...INITIAL });
 
   function set<K extends keyof GarmentFormData>(key: K, value: GarmentFormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  // When editing, prefill the form with the selected garment’s current metadata.
+  // Keep this simple: parent controls when `initialData` changes.
+  useEffect(() => {
+    if (!initialData) return;
+    setForm((prev) => ({
+      ...prev,
+      ...INITIAL,
+      ...initialData,
+      notes: initialData.notes ?? "",
+      weatherSuitability: initialData.weatherSuitability ?? [],
+    }));
+  }, [initialData]);
 
   function toggleWeather(value: string) {
     setForm((prev) => {
@@ -81,7 +103,7 @@ export default function GarmentForm({ onSubmit, saving }: GarmentFormProps) {
       className="glass-card mt-6 p-6"
       onSubmit={handleSubmit}
     >
-      <h2 className="mb-6 text-lg font-bold text-white">Classify This Garment</h2>
+      <h2 className="mb-6 text-lg font-bold text-white">{title}</h2>
 
       <div className="grid gap-5 sm:grid-cols-2">
         {/* Name */}
@@ -170,7 +192,7 @@ export default function GarmentForm({ onSubmit, saving }: GarmentFormProps) {
       <div className="mt-6 flex justify-end">
         <button type="submit" disabled={!isValid || saving} className="btn-primary">
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          {saving ? "Saving…" : "Save to Wardrobe"}
+          {saving ? "Saving…" : submitLabel}
         </button>
       </div>
     </motion.form>

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
+from pymongo import ReturnDocument
 
 from app.db.mongodb import get_db
 from app.services.cloudinary_service import delete_image
@@ -59,5 +60,28 @@ async def delete_garment(garment_id: str, user_id: str) -> dict:
         public_id = doc.get(key)
         if public_id:
             delete_image(public_id)
+
+    return _garment_doc_to_dict(doc)
+
+
+async def update_garment_metadata(garment_id: str, user_id: str, update_data: dict) -> dict | None:
+    """Update editable garment metadata, scoped to the authenticated user."""
+    if not update_data:
+        return None
+
+    try:
+        oid = ObjectId(garment_id)
+    except (InvalidId, TypeError):
+        return None
+
+    db = get_db()
+    doc = await db[COLLECTION].find_one_and_update(
+        {"_id": oid, "userId": user_id},
+        {"$set": update_data},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    if doc is None:
+        return None
 
     return _garment_doc_to_dict(doc)
