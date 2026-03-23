@@ -13,13 +13,11 @@ function DecorativePanel() {
       className="hidden lg:block"
     >
       <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="w-72 rounded-2xl border border-white/[0.06] bg-dark-900/70 p-5 shadow-glow-sm backdrop-blur-xl"
+        className="w-96 rounded-2xl border border-white/[0.06] bg-dark-900/70 p-5 shadow-glow-sm backdrop-blur-xl"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            AI Style Engine
+            Outfit Blueprint
           </span>
           <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400">
             <span className="relative flex h-2 w-2">
@@ -32,23 +30,19 @@ function DecorativePanel() {
 
         <div className="mt-4 space-y-3">
           {[
-            { label: "Style Match", value: 94, color: "from-cyan-400 to-blue-500" },
-            { label: "Weather Fit", value: 87, color: "from-violet-400 to-purple-500" },
-            { label: "Occasion", value: 91, color: "from-cyan-400 to-emerald-400" },
-          ].map(({ label, value, color }) => (
-            <div key={label}>
-              <div className="mb-1 flex justify-between text-[11px]">
-                <span className="text-slate-500">{label}</span>
-                <span className="font-semibold text-slate-300">{value}%</span>
+            { title: "Background cleanup", detail: "Optimized for clean garment previews", badge: "Ready", tone: "text-emerald-400" },
+            { title: "Secure storage", detail: "Keeps your wardrobe and media organized", badge: "Synced", tone: "text-cyan-300" },
+            { title: "Outfit generation", detail: "Builds a tailored look from your garments", badge: "Ready", tone: "text-violet-300" },
+          ].map(({ title, detail, badge, tone }) => (
+            <div
+              key={title}
+              className="rounded-lg border border-white/[0.06] bg-dark-850/40 px-3 py-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-slate-300">{title}</span>
+                <span className={`text-[10px] font-semibold ${tone}`}>{badge}</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-dark-800">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${value}%` }}
-                  transition={{ duration: 1.2, delay: 1 + Math.random() * 0.3, ease: "easeOut" }}
-                  className={`h-full rounded-full bg-gradient-to-r ${color}`}
-                />
-              </div>
+              <div className="mt-1 text-[12px] leading-snug text-slate-500">{detail}</div>
             </div>
           ))}
         </div>
@@ -69,7 +63,7 @@ function DecorativePanel() {
 
         <div className="mt-3 flex items-center gap-2 rounded-lg bg-accent/10 px-3 py-2">
           <CheckCircle2 size={13} className="text-accent" />
-          <span className="text-[11px] font-medium text-accent">Outfit recommendation ready</span>
+          <span className="text-[11px] font-medium text-accent">Outfit blueprint ready</span>
         </div>
       </motion.div>
     </motion.div>
