@@ -102,7 +102,7 @@ export default function HomePage() {
                 Your style,
               </span>
               <br />
-              <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <span className="text-white">
                 intelligently curated
               </span>
             </h1>
